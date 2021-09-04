@@ -42,116 +42,10 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from) {
 };
 exports.__esModule = true;
 var process_1 = require("process");
+var utils_1 = require("../utils");
 var fs = require('fs');
-var dayjs = require('dayjs');
-var https = require('https');
-var customParseFormat = require('dayjs/plugin/customParseFormat');
-dayjs.extend(customParseFormat);
 var csv = require('csv-parser');
-var inFile = 'in/example.csv';
-var outFile = 'out/example.csv';
-function readFile(fn) {
-    return fs.readFileSync(fn, 'utf8').split('\n').map(function (l) { return l.trim(); }).filter(function (l) { return !!l; });
-}
-var tx = readFile(inFile);
 var CSV_DELIMITER = ',';
-var ALREADY_IN_BNB = 'N/A';
-function curl(url) {
-    return new Promise(function (resolve, reject) {
-        p(url, 'Requesting');
-        https.get(url, function (resp) {
-            var data = '';
-            // A chunk of data has been received.
-            resp.on('data', function (chunk) {
-                data += chunk;
-            });
-            // The whole response has been received. Print out the result.
-            resp.on('end', function () {
-                resolve(JSON.parse(data));
-            });
-        }).on("error", function (err) {
-            console.log("Error: " + err.message);
-            reject(err);
-        });
-    });
-}
-function getPriceAtOpen(symbol, time) {
-    return __awaiter(this, void 0, void 0, function () {
-        var price;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, curl(apiBase("klines?symbol=" + symbol + "&interval=1m&startTime=" + time + "&endTime=" + (time + 300000))).then(function (body) {
-                        price = body[0] ? body[0][1] : -1;
-                        p(price, 'Price response');
-                    })];
-                case 1:
-                    _a.sent();
-                    return [2 /*return*/, Number(price).valueOf()]; // [[time, open, high, low, close, volume, close time, asset vol, trades, buy vol, quote vol, ignore ]]
-            }
-        });
-    });
-}
-function apiBase(path) {
-    return 'https://api.binance.com/api/v3/' + path;
-}
-function getSymbolPairs() {
-    return __awaiter(this, void 0, void 0, function () {
-        var pairs;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    pairs = [];
-                    return [4 /*yield*/, curl(apiBase('ticker/price')).then(function (allSymbols) {
-                            pairs = allSymbols.map(function (s) { return s.symbol; });
-                        })];
-                case 1:
-                    _a.sent();
-                    return [2 /*return*/, pairs];
-            }
-        });
-    });
-}
-function getBnbPair(symbols, ticker) {
-    if (ticker === 'AUD') {
-        return 'BNBAUD';
-    }
-    ;
-    if (ticker === 'BNB') {
-        return ALREADY_IN_BNB;
-    }
-    ;
-    return symbols.find(function (s) { return s.indexOf(ticker) !== -1 && s.indexOf('BNB') !== -1; });
-}
-function dateInUnixMilliseconds(date) {
-    return dayjs(date, 'DD/MM/YYYY HH:mm Z').valueOf();
-}
-function getPrice(symbol, date, buySide) {
-    return __awaiter(this, void 0, void 0, function () {
-        var price;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, getPriceAtOpen(symbol, date)];
-                case 1:
-                    price = _a.sent();
-                    return [2 /*return*/, buySide ? price : 1.0 / price];
-            }
-        });
-    });
-}
-function getBnbPairPrice(symbol, date) {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            return [2 /*return*/, symbol === ALREADY_IN_BNB ? 1 : getPrice(symbol, date, symbol.slice(0, 3) === 'BNB')];
-        });
-    });
-}
-function getTicker(cost) {
-    return cost.slice(cost.search(/[A-Z]/));
-}
-function getQuantity(cost, ticker) {
-    var numWithCommas = cost.slice(0, cost.indexOf(ticker));
-    return Number(numWithCommas.replace(',', ''));
-}
 function processCsvLine(symbols, entry) {
     return __awaiter(this, void 0, void 0, function () {
         var comparePair, comparePairPrice, comparisonPrice, audAmount, compareDate, dogePrice, _a;
@@ -162,28 +56,25 @@ function processCsvLine(symbols, entry) {
                         return [2 /*return*/, undefined];
                     }
                     ; // Where am i getting empty lines from???
-                    compareDate = dateInUnixMilliseconds(entry.UTC_Time + ' -0000');
+                    compareDate = utils_1.dateInUnixMilliseconds(entry.UTC_Time + ' -0000');
                     if (!(entry.Coin === 'DOGE')) return [3 /*break*/, 2];
-                    return [4 /*yield*/, getPrice('DOGEAUD', compareDate, true)];
+                    return [4 /*yield*/, utils_1.getPrice('DOGEAUD', compareDate, true)];
                 case 1:
                     dogePrice = _b.sent();
-                    if (dogePrice == -1) {
-                        console.log('============================================ALERT============================================');
-                    }
                     comparePair = 'DOGEAUD';
                     comparePairPrice = dogePrice;
                     comparisonPrice = Number(entry.Change).valueOf() * dogePrice;
                     audAmount = comparisonPrice;
                     return [3 /*break*/, 7];
                 case 2:
-                    comparePair = getBnbPair(symbols, entry.Coin);
-                    return [4 /*yield*/, getBnbPairPrice(comparePair, compareDate)];
+                    comparePair = utils_1.getBnbPair(symbols, entry.Coin);
+                    return [4 /*yield*/, utils_1.getBnbPairPrice(comparePair, compareDate)];
                 case 3:
                     comparePairPrice = _b.sent();
                     if (!(comparePair === 'BNBAUD')) return [3 /*break*/, 4];
                     _a = comparePairPrice;
                     return [3 /*break*/, 6];
-                case 4: return [4 /*yield*/, getPrice('BNBAUD', compareDate, true)];
+                case 4: return [4 /*yield*/, utils_1.getPrice('BNBAUD', compareDate, true)];
                 case 5:
                     _a = _b.sent();
                     _b.label = 6;
@@ -207,10 +98,6 @@ var NEW_HEADERS = [
     'ConvertedPrice',
     'audPrice',
 ];
-function writeOut(path, lines) {
-    fs.writeFileSync(path, lines.join('\n'));
-    console.log('Written to ' + path);
-}
 function run(args) {
     return __awaiter(this, void 0, void 0, function () {
         var out, symbols, csvEntries;
@@ -219,7 +106,7 @@ function run(args) {
             switch (_a.label) {
                 case 0:
                     out = [];
-                    return [4 /*yield*/, getSymbolPairs()];
+                    return [4 /*yield*/, utils_1.getSymbolPairs()];
                 case 1:
                     symbols = _a.sent();
                     csvEntries = [];
@@ -235,14 +122,12 @@ function run(args) {
                             switch (_a.label) {
                                 case 0:
                                     allLines = [];
-                                    console.log('Fetching Data From Binance');
+                                    utils_1.print('Fetching Data From Binance');
                                     csvEntries.forEach(function (csvEntry) {
-                                        // csvEntries.filter(csvEntry => csvEntry.Coin === 'DOGE').forEach(csvEntry => {
-                                        // csvEntries.slice(0,5).forEach(csvEntry => {              // For testing
                                         allLines.push(processCsvLine(symbols, csvEntry));
                                     });
                                     return [4 /*yield*/, Promise.all(allLines).then(function (rows) {
-                                            writeOut(args.outFile, __spreadArray(__spreadArray([], out), rows.map(function (row) { return [
+                                            utils_1.writeOut(args.outFile, __spreadArray(__spreadArray([], out), rows.map(function (row) { return [
                                                 row.UTC_Time,
                                                 row.Account,
                                                 row.Operation,
@@ -265,12 +150,9 @@ function run(args) {
         });
     });
 }
-function p(s, msg) {
-    return console.log((msg ? msg + ": " : '') + s);
-}
 function usage() {
     var args = process.argv.slice(2);
-    p(args, 'args');
+    utils_1.print(args, 'args');
     if (args.length < 2) {
         console.error("Usage: npm start inputFile.csv outputDirectory. | e.g. npm start in/example.csv out");
         process_1.exit(-1);

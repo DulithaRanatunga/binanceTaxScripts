@@ -1,3 +1,8 @@
+## Setup
+
+1. ./setup.sh
+2. cd into one of the folders below and run the scripts.
+
 # binanceTaxScripts
 Scripts for calculating tax obligations in AUD for Binance
 

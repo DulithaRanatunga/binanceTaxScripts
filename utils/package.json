@@ -1,0 +1,21 @@
+{
+  "name": "utils",
+  "version": "1.0.0",
+  "description": "Utils shared between the other scripts",
+  "main": "index.js",
+  "private": true,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "tsc index.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "csv-parser": "^3.0.0",
+    "dayjs": "^1.10.6",
+    "fs": "0.0.1-security"
+  },
+  "devDependencies": {
+    "@types/node": "^16.4.13"
+  }
+}
