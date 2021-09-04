@@ -1,3 +1,4 @@
+import { exit } from "process";
 var fs = require('fs');
 const https = require('https');
 var dayjs = require('dayjs');
@@ -46,6 +47,29 @@ export function print(s, msg?) {
     return console.log((msg ? msg + ": " : '') + s);
 }
 
-export function dateInUnixMilliseconds(date): number {
-    return dayjs(date, 'DD/MM/YYYY HH:mm Z').valueOf(); 
+export function dateInUnixMilliseconds(date, format): number {
+    return dayjs(date, format).valueOf(); 
+}
+
+export interface CommandLineArgs {
+    inFile: string,
+    outFile: string;
+    fileName: string;
+    outDir: string;
+}
+
+export function usage(): CommandLineArgs {
+    var args = process.argv.slice(2);
+    print(args, 'args');
+    if (args.length < 2) {
+        console.error("Usage: npm start inputFile.csv outputDirectory. | e.g. npm start in/example.csv out")
+        exit(-1);
+    } 
+    var fileName: string = args[0].split("/").slice(-1)[0];
+    return {
+        inFile: args[0],
+        outFile: args[1] + "/" + fileName,
+        fileName: fileName,
+        outDir: args[1],
+    }
 }

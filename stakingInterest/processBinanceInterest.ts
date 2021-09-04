@@ -1,6 +1,4 @@
-import { exit } from "process";
-import {print, dateInUnixMilliseconds, writeOut, getPrice, getBnbPair, getBnbPairPrice, getSymbolPairs} from '../utils';
-
+import {CommandLineArgs, usage, print, dateInUnixMilliseconds, writeOut, getPrice, getBnbPair, getBnbPairPrice, getSymbolPairs} from '../utils';
 var fs = require('fs');
 const csv = require('csv-parser')
 
@@ -9,7 +7,7 @@ const CSV_DELIMITER = ',';
 async function processCsvLine(symbols: string[], entry: CsvEntryIn): Promise<CsvEntryOut> {
     if (JSON.stringify(entry) === '{}') { return undefined }; // Where am i getting empty lines from???
     let comparePair, comparePairPrice, comparisonPrice, audAmount;
-    const compareDate: number = dateInUnixMilliseconds(entry.UTC_Time + ' -0000');
+    const compareDate: number = dateInUnixMilliseconds(entry.UTC_Time + ' -0000', 'DD/MM/YYYY HH:mm Z');
     // DOGE/BNB was delisted in 2020 and added back in 2021. So we go direct for that one.
     if (entry.Coin === 'DOGE') { 
         const dogePrice = await getPrice('DOGEAUD', compareDate, true);
@@ -85,23 +83,5 @@ async function run(args: CommandLineArgs) {
   });
 }
 
-interface CommandLineArgs {
-    inFile: string,
-    outFile: string;
-}
-
-function usage(): CommandLineArgs {
-    var args = process.argv.slice(2);
-    print(args, 'args');
-    if (args.length < 2) {
-        console.error("Usage: npm start inputFile.csv outputDirectory. | e.g. npm start in/example.csv out")
-        exit(-1);
-    } 
-    let inFile: string = args[0];
-    return {
-        inFile: inFile,
-        outFile: args[1] + "/" + inFile.split("/").slice(-1)[0],
-    }
-}
 
 run(usage());
